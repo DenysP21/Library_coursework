@@ -4,6 +4,7 @@ let editModal;
 
 document.addEventListener("DOMContentLoaded", () => {
   editModal = new bootstrap.Modal(document.getElementById("editBookModal"));
+
   loadOptions();
   loadBooksList();
 });
@@ -16,30 +17,6 @@ async function loadOptions() {
     fillSelect("publisherSelect", data.publishers, (p) => p.name);
     fillSelect("authorSelect", data.authors, (a) => `${a.surname} ${a.name}`);
     fillSelect("categorySelect", data.categories, (c) => c.name);
-  } catch (err) {
-    console.error("Помилка завантаження опцій:", err);
-  }
-}
-
-function fillSelect(elementId, items, textFn) {
-  const select = document.getElementById(elementId);
-  select.innerHTML = '<option value="" selected disabled>Оберіть...</option>';
-  items.forEach((item) => {
-    const opt = document.createElement("option");
-    opt.value = item.id;
-    opt.textContent = textFn(item);
-    select.appendChild(opt);
-  });
-}
-async function loadOptions() {
-  try {
-    const res = await fetch(`${API_URL}/books/options`);
-    const data = await res.json();
-
-    fillSelect("publisherSelect", data.publishers, (p) => p.name);
-    fillSelect("authorSelect", data.authors, (a) => `${a.surname} ${a.name}`);
-    fillSelect("categorySelect", data.categories, (c) => c.name);
-
     fillSelect("editPublisherSelect", data.publishers, (p) => p.name);
     fillSelect(
       "editAuthorSelect",
@@ -48,13 +25,14 @@ async function loadOptions() {
     );
     fillSelect("editCategorySelect", data.categories, (c) => c.name);
   } catch (err) {
-    console.error(err);
+    console.error("Помилка завантаження опцій:", err);
   }
 }
 
 function fillSelect(elementId, items, textFn) {
   const select = document.getElementById(elementId);
   select.innerHTML = '<option value="" selected disabled>Оберіть...</option>';
+
   items.forEach((item) => {
     const opt = document.createElement("option");
     opt.value = item.id;
@@ -98,34 +76,9 @@ document.getElementById("addBookForm").addEventListener("submit", async (e) => {
 async function loadBooksList() {
   try {
     const res = await fetch(`${API_URL}/books`);
-    const books = await res.json();
+    const responseData = await res.json();
 
-    const tbody = document.getElementById("booksTableBody");
-    tbody.innerHTML = "";
-
-    books.forEach((b) => {
-      const list = b.authors || b.authorBooks || [];
-      const authors = list.map((item) => item.author.surname).join(", ");
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-                <td>${b.id}</td>
-                <td class="fw-bold">${b.title}</td>
-                <td>${authors}</td>
-                <td>${b.publicationYear}</td>
-                <td>${b.publisher ? b.publisher.name : "-"}</td>
-            `;
-      tbody.appendChild(tr);
-    });
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-async function loadBooksList() {
-  try {
-    const res = await fetch(`${API_URL}/books`);
-    allBooks = await res.json();
+    allBooks = responseData.items ? responseData.items : responseData;
 
     const tbody = document.getElementById("booksTableBody");
     tbody.innerHTML = "";
@@ -150,7 +103,7 @@ async function loadBooksList() {
       tbody.appendChild(tr);
     });
   } catch (error) {
-    console.error(error);
+    console.error("Помилка завантаження книг:", error);
   }
 }
 
@@ -182,6 +135,7 @@ document
     e.preventDefault();
 
     const id = document.getElementById("editBookId").value;
+
     const payload = {
       title: document.getElementById("editTitle").value,
       publicationYear: document.getElementById("editYear").value,
@@ -202,7 +156,8 @@ document
         editModal.hide();
         loadBooksList();
       } else {
-        alert("Помилка оновлення");
+        const err = await res.json();
+        alert("Помилка оновлення: " + (err.error || "Невідома помилка"));
       }
     } catch (err) {
       console.error(err);
