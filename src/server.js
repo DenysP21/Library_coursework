@@ -7,7 +7,7 @@ const memberRoutes = require("./routes/memberRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const bookRoutes = require("./routes/bookRoutes");
 const librarianRoutes = require("./routes/librarianRoutes");
-const errorHandler = require("./middlewares/errorHandler");
+const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
