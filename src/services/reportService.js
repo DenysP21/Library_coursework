@@ -2,7 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 class ReportService {
-  async getTopReaders() {
+  async getTopReaders(limit = 5) {
     const result = await prisma.$queryRaw`
       SELECT 
         m.name, 

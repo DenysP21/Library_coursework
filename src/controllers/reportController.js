@@ -1,25 +1,17 @@
 const reportService = require("../services/reportService");
+const asyncHandler = require("../utils/asyncHandler");
 
 class ReportController {
-  async getTopReaders(req, res) {
-    try {
-      const data = await reportService.getTopReaders();
-      res.json(data);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: error.message });
-    }
-  }
+  getTopReaders = asyncHandler(async (req, res) => {
+    const limit = parseInt(req.query.limit) || 5;
+    const data = await reportService.getTopReaders(limit);
+    res.json(data);
+  });
 
-  async getCategoryStats(req, res) {
-    try {
-      const data = await reportService.getCategoryStats();
-      res.json(data);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: error.message });
-    }
-  }
+  getCategoryStats = asyncHandler(async (req, res) => {
+    const data = await reportService.getCategoryStats();
+    res.json(data);
+  });
 }
 
 module.exports = new ReportController();
