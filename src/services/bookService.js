@@ -11,15 +11,31 @@ class BookService {
     return { authors, publishers, categories };
   }
 
-  async getAllBooks() {
-    return await prisma.book.findMany({
-      include: {
-        publisher: true,
-        authors: { include: { author: true } },
-        categories: { include: { category: true } },
+  async getAllBooks(page = 1, limit = 100) {
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await prisma.$transaction([
+      prisma.book.findMany({
+        skip: skip,
+        take: limit,
+        include: {
+          publisher: true,
+          authors: { include: { author: true } },
+          categories: { include: { category: true } },
+        },
+        orderBy: { id: "desc" },
+      }),
+      prisma.book.count(),
+    ]);
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { id: "desc" },
-    });
+    };
   }
 
   async createBook(data) {
@@ -28,13 +44,13 @@ class BookService {
     return await prisma.book.create({
       data: {
         title,
-        publicationYear: parseInt(publicationYear),
-        publisherId: parseInt(publisherId),
+        publicationYear,
+        publisherId,
         authors: {
-          create: { authorId: parseInt(authorId) },
+          create: { authorId },
         },
         categories: {
-          create: { categoryId: parseInt(categoryId) },
+          create: { categoryId },
         },
       },
     });
@@ -43,20 +59,18 @@ class BookService {
     const { title, publicationYear, publisherId, authorId, categoryId } = data;
 
     return await prisma.book.update({
-      where: { id: parseInt(id) },
+      where: { id },
       data: {
-        title: title,
-        publicationYear: parseInt(publicationYear),
-        publisherId: parseInt(publisherId),
-
+        title,
+        publicationYear,
+        publisherId,
         authors: {
           deleteMany: {},
-          create: { authorId: parseInt(authorId) },
+          create: { authorId },
         },
-
         categories: {
           deleteMany: {},
-          create: { categoryId: parseInt(categoryId) },
+          create: { categoryId },
         },
       },
     });
