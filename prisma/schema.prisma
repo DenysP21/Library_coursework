@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums (перелічення) з твого SQL
+enum PositionName {
+  LEAD_LIBRARIAN @map("Провідний бібліотекар")
+  LIBRARIAN_1    @map("Бібліотекар І категорії")
+  LIBRARIAN_2    @map("Бібліотекар ІІ категорії")
+  LIBRARIAN      @map("Бібліотекар")
+}
+
+enum DepartmentName {
+  E_LIBRARY     @map("Відділ електронної бібліотеки")
+  READING_HALLS @map("Відділ читальних залів")
+  RARE_BOOKS    @map("Відділ рідкісних і цінних книг")
+}
+
+enum LoanStatus {
+  ISSUED   @map("Видано")
+  RETURNED @map("Повернено")
+  OVERDUE  @map("Прострочено")
+}
+
+enum FineStatus {
+  ISSUED  @map("Нараховано")
+  PAID    @map("Сплачено")
+  WAIVED  @map("Списано")
+}
+
+// 1. Категорії
+model Category {
+  id    Int            @id @default(autoincrement()) @map("category_id")
+  name  String         @map("category_name") @db.VarChar(32)
+  books BookCategory[]
+
+  @@map("Category")
+}
+
+// 2. Видавці
+model Publisher {
+  id      Int    @id @default(autoincrement()) @map("pub_id")
+  name    String @db.VarChar(32)
+  address String @db.Text
+  books   Book[]
+
+  @@map("Publisher")
+}
+
+// 3. Автори
+model Author {
+  id        Int          @id @default(autoincrement()) @map("author_id")
+  name      String       @db.VarChar(32)
+  surname   String       @db.VarChar(32)
+  birthYear Int?         @map("birth_year") @db.SmallInt
+  country   String?      @db.VarChar(32)
+  books     AuthorBook[]
+
+  // Індекс для швидкого пошуку по прізвищу
+  @@index([surname])
+  @@map("Author")
+}
+
+// 4. Книги
+model Book {
+  id              Int            @id @default(autoincrement()) @map("book_id")
+  title           String         @db.VarChar(64)
+  publicationYear Int?           @map("publication_year") @db.SmallInt
+  publisherId     Int            @map("pub_id")
+  publisher       Publisher      @relation(fields: [publisherId], references: [id])
+  
+  // Зв'язки
+  authors         AuthorBook[]
+  categories      BookCategory[]
+  loans           Loan[]
+
+  // Аудит полів
+  createdAt       DateTime       @default(now()) @map("created_at")
+  
+  // Індекс по назві для пошуку
+  @@index([title])
+  @@map("Book")
+}
+
+// 5. Автор-Книга (Many-to-Many Explicit)
+model AuthorBook {
+  authorId Int    @map("author_id")
+  bookId   Int    @map("book_id")
+  author   Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  book     Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@id([authorId, bookId])
+  @@map("AuthorBook")
+}
+
+// 6. Категорія-Книга (Many-to-Many Explicit)
+model BookCategory {
+  categoryId Int      @map("category_id")
+  bookId     Int      @map("book_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, bookId])
+  @@map("BookCategory")
+}
+
+// 7. Бібліотекарі
+model Librarian {
+  id         Int             @id @default(autoincrement()) @map("librarian_id")
+  name       String          @db.VarChar(32)
+  surname    String          @db.VarChar(32)
+  position   PositionName?
+  department DepartmentName?
+  email      String          @unique @db.VarChar(32)
+  loans      Loan[]
+
+  @@map("Librarian")
+}
+
+// 8. Читачі (Реалізуємо Soft Delete тут)
+model Member {
+  id               Int       @id @default(autoincrement()) @map("member_id")
+  name             String    @db.VarChar(32)
+  surname          String    @db.VarChar(32)
+  address          String    @db.Text
+  phoneNumber      String?   @unique @map("phone_number") @db.VarChar(13)
+  registrationDate DateTime  @default(now()) @map("registration_date") @db.Date
+  
+  // Soft Delete поле (якщо не null, то видалений)
+  deletedAt        DateTime? @map("deleted_at")
+  
+  loans            Loan[]
+
+  // Індекс для пошуку по телефону
+  @@index([phoneNumber])
+  @@map("Member")
+}
+
+// 9. Видача книг (Основна таблиця для транзакцій)
+model Loan {
+  id          Int        @id @default(autoincrement()) @map("loan_id")
+  memberId    Int        @map("member_id")
+  bookId      Int        @map("book_id")
+  librarianId Int        @map("librarian_id")
+  loanDate    DateTime   @default(now()) @map("loan_date") @db.Date
+  returnDate  DateTime?  @map("return_date") @db.Date
+  status      LoanStatus @default(ISSUED)
+  
+  member      Member     @relation(fields: [memberId], references: [id])
+  book        Book       @relation(fields: [bookId], references: [id])
+  librarian   Librarian  @relation(fields: [librarianId], references: [id])
+  fine        Fine?
+
+  // Індекс для фільтрації активних видач
+  @@index([status])
+  @@map("Loan")
+}
+
+// 10. Штрафи
+model Fine {
+  id     Int        @id @default(autoincrement()) @map("fine_id")
+  loanId Int        @unique @map("loan_id")
+  amount Decimal    @db.Decimal(6, 2)
+  status FineStatus @default(ISSUED)
+  
+  loan   Loan       @relation(fields: [loanId], references: [id])
+
+  @@map("Fine")
+}
