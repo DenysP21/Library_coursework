@@ -1,24 +1,20 @@
 const memberService = require("../services/memberService");
+const asyncHandler = require("../utils/asyncHandler");
 
 class MemberController {
-  async deleteMember(req, res) {
-    try {
-      const { id } = req.params;
-      await memberService.deleteMember(parseInt(id));
-      res.json({ message: "Читача успішно деактивовано (soft delete)." });
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  }
+  deleteMember = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    await memberService.deleteMember(parseInt(id));
+    res.json({ message: "Читача успішно деактивовано (soft delete)." });
+  });
 
-  async getMembers(req, res) {
-    try {
-      const members = await memberService.getAllActiveMembers();
-      res.json(members);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
+  getMembers = asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 100;
+
+    const members = await memberService.getAllActiveMembers();
+    res.json(members);
+  });
 }
 
 module.exports = new MemberController();
