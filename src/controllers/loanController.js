@@ -1,50 +1,42 @@
 const loanService = require("../services/loanService");
+const asyncHandler = require("../utils/asyncHandler");
 
 class LoanController {
-  async createLoan(req, res) {
-    try {
-      const { bookId, memberId, librarianId } = req.body;
+  createLoan = asyncHandler(async (req, res) => {
+    const { bookId, memberId, librarianId } = req.body;
 
-      if (!bookId || !memberId || !librarianId) {
-        return res
-          .status(400)
-          .json({ error: "Необхідно вказати bookId, memberId та librarianId" });
-      }
-
-      const loan = await loanService.issueBook(
-        parseInt(bookId),
-        parseInt(memberId),
-        parseInt(librarianId)
-      );
-
-      res.status(201).json({
-        message: "Книгу успішно видано",
-        data: loan,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(400).json({ error: error.message });
+    if (!bookId || !memberId || !librarianId) {
+      res.status(400);
+      throw new Error("Необхідно вказати bookId, memberId та librarianId");
     }
-  }
-  async returnBook(req, res) {
-    try {
-      const { bookId } = req.body;
 
-      if (!bookId) {
-        return res.status(400).json({ error: "Необхідно вказати bookId" });
-      }
+    const loan = await loanService.issueBook(
+      parseInt(bookId),
+      parseInt(memberId),
+      parseInt(librarianId)
+    );
 
-      const result = await loanService.returnBook(parseInt(bookId));
+    res.status(201).json({
+      message: "Книгу успішно видано",
+      data: loan,
+    });
+  });
 
-      res.json({
-        message: "Книгу успішно повернено",
-        data: result,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(400).json({ error: error.message });
+  returnBook = asyncHandler(async (req, res) => {
+    const { bookId } = req.body;
+
+    if (!bookId) {
+      res.status(400);
+      throw new Error("Необхідно вказати bookId");
     }
-  }
+
+    const result = await loanService.returnBook(parseInt(bookId));
+
+    res.json({
+      message: "Книгу успішно повернено",
+      data: result,
+    });
+  });
 }
 
 module.exports = new LoanController();
