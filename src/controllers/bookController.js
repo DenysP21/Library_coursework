@@ -1,13 +1,13 @@
 const bookService = require("../services/bookService");
-const asynceHandler = require("express-async-handler");
+const asyncHandler = require("../utils/asyncHandler");
 
 class BookController {
-  getFormOptions = asynceHandler(async (req, res) => {
+  getFormOptions = asyncHandler(async (req, res) => {
     const data = await bookService.getFormOptions();
     res.json(data);
   });
 
-  getAllBooks = asynceHandler(async (req, res) => {
+  getAllBooks = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 100;
 
@@ -15,7 +15,7 @@ class BookController {
     res.json(result);
   });
 
-  createBook = asynceHandler(async (req, res) => {
+  createBook = asyncHandler(async (req, res) => {
     const { title, publicationYear, publisherId, authorId, categoryId } =
       req.body;
 
@@ -41,7 +41,7 @@ class BookController {
     res.status(201).json({ message: "Книгу додано!", book: newBook });
   });
 
-  updateBook = asynceHandler(async (req, res) => {
+  updateBook = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const cleanData = {
       title: req.body.title,
