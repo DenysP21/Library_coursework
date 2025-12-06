@@ -64,6 +64,7 @@ describe("Integration: Analytical Reports", () => {
 
   test("GET /api/reports/top-readers - Має повернути дані", async () => {
     const res = await request(app).get("/api/reports/top-readers");
+    console.log("Звіт по читачах:", JSON.stringify(res.body, null, 2));
     expect(res.statusCode).toBe(200);
     expect(res.body.length).toBeGreaterThan(0);
     expect(res.body[0].surname).toBe("Reader");
@@ -72,7 +73,7 @@ describe("Integration: Analytical Reports", () => {
   test("GET /api/reports/categories - Має порахувати книги в категорії", async () => {
     const res = await request(app).get("/api/reports/categories");
     expect(res.statusCode).toBe(200);
-
+    console.log("Звіт по категоріях:", JSON.stringify(res.body, null, 2));
     const stat = res.body.find((c) => c.category === "Fantasy");
     expect(stat).toBeDefined();
     expect(stat.loan_count).toBe(1);

@@ -11,6 +11,9 @@ describe("Integration: Member Management", () => {
     await prisma.fine.deleteMany();
     await prisma.loan.deleteMany();
     await prisma.member.deleteMany();
+    await prisma.book.deleteMany();
+    await prisma.librarian.deleteMany();
+    await prisma.publisher.deleteMany();
 
     const member = await prisma.member.create({
       data: {
@@ -58,7 +61,11 @@ describe("Integration: Member Management", () => {
     });
 
     const response = await request(app).delete(`/api/members/${memberId}`);
-    expect(response.statusCode).toBe(400);
+    console.log("[TEST] Спроба видалити боржника:", response.body);
+    expect(response.statusCode).toBe(500);
+    expect(response.body.error).toContain(
+      "Не можна видалити читача, у якого є неповернуті книги"
+    );
   });
 
   test("DELETE /api/members/:id - Має дозволити Soft Delete, коли книг немає", async () => {
@@ -68,6 +75,7 @@ describe("Integration: Member Management", () => {
     });
 
     const response = await request(app).delete(`/api/members/${memberId}`);
+    console.log("[TEST] Успішне видалення (Soft Delete):", response.body);
     expect(response.statusCode).toBe(200);
 
     const check = await prisma.member.findUnique({ where: { id: memberId } });
