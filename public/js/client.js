@@ -8,11 +8,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function loadUsers() {
   try {
     const res = await fetch(`${API_URL}/members?limit=100`);
-    const json = await res.json();
-    const members = json.data || json;
+    const members = await res.json();
 
     const select = document.getElementById("userSelect");
-    members.forEach((m) => {
+    select.innerHTML =
+      '<option value="" selected disabled>Оберіть себе зі списку...</option>';
+
+    const list = Array.isArray(members) ? members : members.data || [];
+
+    list.forEach((m) => {
       const opt = document.createElement("option");
       opt.value = m.id;
       opt.textContent = `${m.surname} ${m.name} (ID: ${m.id})`;
@@ -26,32 +30,41 @@ async function loadUsers() {
 async function loadBooks() {
   try {
     const res = await fetch(`${API_URL}/books`);
-    const books = await res.json();
+    const responseData = await res.json();
+
+    const books = responseData.items ? responseData.items : responseData;
 
     const container = document.getElementById("booksContainer");
     container.innerHTML = "";
 
     books.forEach((book) => {
-      const authors = book.authorBooks
-        .map((ab) => `${ab.author.name} ${ab.author.surname}`)
+      const list = book.authors || [];
+      const authors = list
+        .map((item) => `${item.author.name} ${item.author.surname}`)
         .join(", ");
 
       const col = document.createElement("div");
       col.className = "col-md-6 col-lg-4 mb-3";
       col.innerHTML = `
-                <div class="card h-100">
+                <div class="card h-100 shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title text-primary">${book.title}</h5>
-                        <p class="card-text text-muted mb-2">Автор: ${
-                          authors || "Невідомий"
-                        }</p>
-                        <p class="card-text"><small>Рік: ${
-                          book.publicationYear
-                        }</small></p>
+                        <h5 class="card-title text-primary fw-bold">${
+                          book.title
+                        }</h5>
+                        <p class="card-text text-muted mb-2">
+                            <i class="bi bi-person"></i> Автор: ${
+                              authors || "Невідомий"
+                            }
+                        </p>
+                        <p class="card-text">
+                            <small class="text-secondary">Рік: ${
+                              book.publicationYear
+                            }</small>
+                        </p>
                         <button onclick="takeBook(${
                           book.id
                         })" class="btn btn-success w-100 mt-2">
-                            Взяти книгу
+                            📚 Взяти книгу
                         </button>
                     </div>
                 </div>
@@ -61,7 +74,7 @@ async function loadBooks() {
   } catch (err) {
     console.error("Помилка завантаження книг:", err);
     document.getElementById("booksContainer").innerHTML =
-      "<p class='text-danger'>Не вдалося завантажити книги</p>";
+      "<p class='text-danger text-center'>Не вдалося завантажити книги</p>";
   }
 }
 
@@ -69,16 +82,20 @@ async function takeBook(bookId) {
   const memberId = document.getElementById("userSelect").value;
 
   if (!memberId) {
-    alert("Будь ласка, оберіть 'Хто ви?' у списку зверху!");
+    alert("❗ Будь ласка, оберіть 'Хто ви?' у списку зверху!");
     return;
   }
 
   let librarianId = 1;
   try {
     const libRes = await fetch(`${API_URL}/librarians/first`);
-    const lib = await libRes.json();
-    if (lib && lib.id) librarianId = lib.id;
-  } catch (e) {}
+    if (libRes.ok) {
+      const lib = await libRes.json();
+      if (lib && lib.id) librarianId = lib.id;
+    }
+  } catch (e) {
+    console.warn("Не вдалося знайти бібліотекаря, використовуємо ID=1");
+  }
 
   const payload = {
     bookId: parseInt(bookId),
@@ -96,15 +113,16 @@ async function takeBook(bookId) {
     const data = await res.json();
 
     if (res.ok) {
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14);
+
       alert(
-        `Успіх! Ви взяли книгу "${
+        `✅ Успіх! Ви взяли книгу "${
           data.data.book.title
-        }". Повернути до: ${new Date(
-          data.data.returnDate
-        ).toLocaleDateString()}`
+        }".\n Повернути до: ${dueDate.toLocaleDateString()}`
       );
     } else {
-      alert("Помилка: " + (data.error || "Щось пішло не так"));
+      alert("❌ Помилка: " + (data.error || "Щось пішло не так"));
     }
   } catch (err) {
     console.error(err);
