@@ -174,21 +174,43 @@ async function loadLoansList() {
     tbody.innerHTML = "";
 
     loans.forEach((loan) => {
-      const dateIssued = new Date(loan.loanDate).toLocaleDateString();
-      const dateReturned = loan.returnDate
-        ? new Date(loan.returnDate).toLocaleDateString()
-        : "-";
+      const dateIssued = new Date(loan.loanDate).toLocaleDateString("uk-UA");
+
+      let dateReturned;
+      if (loan.returnDate) {
+        dateReturned = new Date(loan.returnDate).toLocaleDateString("uk-UA");
+      } else {
+        const deadline = new Date(loan.loanDate);
+        deadline.setDate(deadline.getDate() + 14);
+        dateReturned = `<span class="text-muted">до ${deadline.toLocaleDateString(
+          "uk-UA"
+        )}</span>`;
+      }
 
       const statusBadge = getStatusBadge(loan.status);
+
+      let actionBtn = "-";
+      if (loan.status !== "RETURNED") {
+        actionBtn = `
+          <button 
+            class="btn btn-sm btn-outline-success" 
+            onclick="returnBook(${loan.book.id})"
+            title="Повернути книгу"
+          >
+            📥 Повернути
+          </button>
+        `;
+      }
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
           <td>${loan.id}</td>
-          <td class="fw-bold">${loan.book.title}</td>
+          <td class="fw-bold text-primary">${loan.book.title}</td>
           <td>${loan.member.surname} ${loan.member.name}</td>
           <td>${dateIssued}</td>
           <td>${dateReturned}</td>
-          <td>${statusBadge}</td>
+          <td class="text-center">${statusBadge}</td>
+          <td class="text-center">${actionBtn}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -280,3 +302,35 @@ document
       alert("Помилка з'єднання");
     }
   });
+
+async function returnBook(bookId) {
+  if (!confirm("Підтвердити повернення книги?")) return;
+
+  try {
+    const res = await fetch(`${API_URL}/loans/return`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId: parseInt(bookId) }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      if (data.data.fine) {
+        alert(
+          `⚠️ Книгу повернено із запізненням!\n💰 Нараховано штраф: ${data.data.fine.amount} грн.`
+        );
+      } else {
+        alert("✅ Книгу успішно повернено!");
+      }
+
+      loadLoansList();
+      loadBooksList();
+    } else {
+      alert("Помилка: " + (data.error || "Щось пішло не так"));
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Помилка з'єднання");
+  }
+}
