@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadOptions();
   loadBooksList();
+  loadLoansList();
 });
 
 async function loadOptions() {
@@ -164,3 +165,44 @@ document
       alert("Помилка з'єднання");
     }
   });
+async function loadLoansList() {
+  try {
+    const res = await fetch(`${API_URL}/loans`);
+    const loans = await res.json();
+
+    const tbody = document.getElementById("loansTableBody");
+    tbody.innerHTML = "";
+
+    loans.forEach((loan) => {
+      const dateIssued = new Date(loan.loanDate).toLocaleDateString();
+      const dateReturned = loan.returnDate
+        ? new Date(loan.returnDate).toLocaleDateString()
+        : "-";
+
+      const statusBadge = getStatusBadge(loan.status);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+          <td>${loan.id}</td>
+          <td class="fw-bold">${loan.book.title}</td>
+          <td>${loan.member.surname} ${loan.member.name}</td>
+          <td>${dateIssued}</td>
+          <td>${dateReturned}</td>
+          <td>${statusBadge}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error("Помилка завантаження видач:", error);
+  }
+}
+
+function getStatusBadge(status) {
+  const badges = {
+    ISSUED: '<span class="badge bg-warning text-dark">Видано</span>',
+    RETURNED: '<span class="badge bg-success">Повернено</span>',
+    OVERDUE: '<span class="badge bg-danger">Прострочено</span>',
+  };
+
+  return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+}

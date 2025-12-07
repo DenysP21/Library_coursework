@@ -37,6 +37,12 @@ class LoanController {
       data: result,
     });
   });
+
+  getLoans = asyncHandler(async (req, res) => {
+    const limit = parseInt(req.query.limit) || 50;
+    const loans = await loanService.getAllLoans(limit);
+    res.json(loans);
+  });
 }
 
 module.exports = new LoanController();

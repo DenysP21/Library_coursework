@@ -114,6 +114,17 @@ class LoanService {
       return { loan: updatedLoan, fine: fineCreated };
     });
   }
+
+  async getAllLoans(limit = 50) {
+    return await prisma.loan.findMany({
+      take: limit,
+      orderBy: { loanDate: "desc" },
+      include: {
+        book: true,
+        member: true,
+      },
+    });
+  }
 }
 
 module.exports = new LoanService();
