@@ -28,7 +28,14 @@
                 data-bs-toggle="modal"
                 data-bs-target="#addCategoryModal"
               >
-                ➕ Створити нову категорію
+                ➕ Нова категорія
+              </button>
+              <button 
+                class="btn btn-outline-success" 
+                data-bs-toggle="modal" 
+                data-bs-target="#addAuthorModal"
+              >
+                👤 Новий автор
               </button>
             </div>
             <hr class="mb-4" />
@@ -210,6 +217,37 @@
                   required 
                   placeholder="Наприклад: Манга"
                 >
+              </div>
+              <button type="submit" class="btn btn-success w-100">Зберегти</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="addAuthorModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">👤 Новий автор</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="addAuthorForm">
+              <div class="mb-3">
+                <label class="form-label">Ім'я <span class="text-danger">*</span></label>
+                <input type="text" id="newAuthorName" class="form-control" required placeholder="Тарас">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Прізвище <span class="text-danger">*</span></label>
+                <input type="text" id="newAuthorSurname" class="form-control" required placeholder="Шевченко">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Рік народження</label>
+                <input type="number" id="newAuthorYear" class="form-control" placeholder="1814">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Країна</label>
+                <input type="text" id="newAuthorCountry" class="form-control" placeholder="Україна">
               </div>
               <button type="submit" class="btn btn-success w-100">Зберегти</button>
             </form>

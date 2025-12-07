@@ -241,3 +241,42 @@ document
       alert("Помилка з'єднання");
     }
   });
+
+document
+  .getElementById("addAuthorForm")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      name: document.getElementById("newAuthorName").value,
+      surname: document.getElementById("newAuthorSurname").value,
+      birthYear: document.getElementById("newAuthorYear").value,
+      country: document.getElementById("newAuthorCountry").value,
+    };
+
+    try {
+      const res = await fetch(`${API_URL}/authors`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        alert("✅ Автора успішно створено!");
+
+        document.getElementById("addAuthorForm").reset();
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("addAuthorModal")
+        );
+        modal.hide();
+
+        loadOptions();
+      } else {
+        const err = await res.json();
+        alert("Помилка: " + err.error);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Помилка з'єднання");
+    }
+  });
