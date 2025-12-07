@@ -22,6 +22,16 @@
       <div class="row">
         <div class="col-md-4">
           <div class="card p-4">
+            <div class="d-grid gap-2 mb-4">
+              <button
+                class="btn btn-outline-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#addCategoryModal"
+              >
+                ➕ Створити нову категорію
+              </button>
+            </div>
+            <hr class="mb-4" />
             <h4 class="mb-3">➕ Додати книгу</h4>
             <form id="addBookForm">
               <div class="mb-3">
@@ -176,6 +186,32 @@
               <button type="submit" class="btn btn-primary w-100">
                 Зберегти зміни
               </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div> 
+    <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">📂 Нова категорія</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="addCategoryForm">
+              <div class="mb-3">
+                <label class="form-label">Назва категорії</label>
+                <input 
+                  type="text" 
+                  id="newCategoryName" 
+                  class="form-control" 
+                  required 
+                  placeholder="Наприклад: Манга"
+                >
+              </div>
+              <button type="submit" class="btn btn-success w-100">Зберегти</button>
             </form>
           </div>
         </div>

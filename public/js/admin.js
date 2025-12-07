@@ -206,3 +206,38 @@ function getStatusBadge(status) {
 
   return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
 }
+
+document
+  .getElementById("addCategoryForm")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const nameInput = document.getElementById("newCategoryName");
+    const name = nameInput.value;
+
+    try {
+      const res = await fetch(`${API_URL}/categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+
+      if (res.ok) {
+        alert("✅ Категорію успішно створено!");
+
+        nameInput.value = "";
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("addCategoryModal")
+        );
+        modal.hide();
+
+        loadOptions();
+      } else {
+        const err = await res.json();
+        alert("Помилка: " + err.error);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Помилка з'єднання");
+    }
+  });

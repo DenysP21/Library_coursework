@@ -7,6 +7,7 @@ const memberRoutes = require("./routes/memberRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const bookRoutes = require("./routes/bookRoutes");
 const librarianRoutes = require("./routes/librarianRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api/members", memberRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/books", bookRoutes);
 app.use("/api/librarians", librarianRoutes);
+app.use("/api/categories", categoryRoutes);
 
 app.get("/health", async (req, res) => {
   res.json({ status: "OK", timestamp: new Date() });
