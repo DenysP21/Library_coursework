@@ -134,6 +134,51 @@
         </div>
       </div>
     </div>
+    <div class="row mt-4 mb-5">
+      <div class="col-12">
+        <h3 class="mb-3 border-bottom pb-2">📊 Аналітичні звіти</h3>
+        <button class="btn btn-primary mb-3" onclick="loadReports()">🔄 Оновити звіти</button>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+          <div class="card-header bg-primary text-white">
+            🏆 Топ-5 Найактивніших читачів
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+              <thead>
+                <tr>
+                  <th>Ім'я</th>
+                  <th>Всього книг</th>
+                  <th>Штрафи (грн)</th>
+                </tr>
+              </thead>
+              <tbody id="topReadersBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+          <div class="card-header bg-success text-white">
+            📚 Популярність жанрів
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+              <thead>
+                <tr>
+                  <th>Категорія</th>
+                  <th>Кількість видач</th>
+                </tr>
+              </thead>
+              <tbody id="categoryStatsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="modal fade" id="editBookModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">

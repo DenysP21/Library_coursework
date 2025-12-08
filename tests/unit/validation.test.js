@@ -12,26 +12,25 @@ const mockResponse = () => {
 };
 
 describe("Unit: Loan Controller Validation", () => {
-  test("createLoan має повернути 400, якщо немає bookId", async () => {
+  test("createLoan має викликати next(error) зі статусом 400, якщо немає даних", async () => {
     const req = mockRequest({ memberId: 1, librarianId: 1 });
     const res = mockResponse();
+    const next = jest.fn();
 
-    await loanController.createLoan(req, res);
+    await loanController.createLoan(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        error: expect.stringContaining("Необхідно вказати"),
-      })
-    );
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
   });
 
-  test("createLoan має повернути 400, якщо немає memberId", async () => {
-    const req = mockRequest({ bookId: 1, librarianId: 1 });
+  test("returnBook має викликати next(error) зі статусом 400, якщо немає bookId", async () => {
+    const req = mockRequest({});
     const res = mockResponse();
+    const next = jest.fn();
 
-    await loanController.createLoan(req, res);
+    await loanController.returnBook(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
   });
 });

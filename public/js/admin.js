@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadOptions();
   loadBooksList();
   loadLoansList();
+  loadReports();
 });
 
 async function loadOptions() {
@@ -332,5 +333,72 @@ async function returnBook(bookId) {
   } catch (err) {
     console.error(err);
     alert("Помилка з'єднання");
+  }
+}
+
+async function loadReports() {
+  await loadTopReaders();
+  await loadCategoryStats();
+}
+
+async function loadTopReaders() {
+  try {
+    const res = await fetch(`${API_URL}/reports/top-readers`);
+    const readers = await res.json();
+
+    const tbody = document.getElementById("topReadersBody");
+    tbody.innerHTML = "";
+
+    if (readers.length === 0) {
+      tbody.innerHTML =
+        '<tr><td colspan="3" class="text-center">Даних немає</td></tr>';
+      return;
+    }
+
+    readers.forEach((r) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>
+          <strong>${r.surname} ${r.name}</strong><br>
+          <small class="text-muted">${r.phone_number}</small>
+        </td>
+        <td class="text-center fw-bold">${r.total_loans}</td>
+        <td class="text-danger">${
+          r.total_fine_amount > 0 ? r.total_fine_amount + " грн" : "-"
+        }</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error("Помилка звіту читачів:", err);
+  }
+}
+
+async function loadCategoryStats() {
+  try {
+    const res = await fetch(`${API_URL}/reports/categories`);
+    const stats = await res.json();
+
+    const tbody = document.getElementById("categoryStatsBody");
+    tbody.innerHTML = "";
+
+    if (stats.length === 0) {
+      tbody.innerHTML =
+        '<tr><td colspan="2" class="text-center">Даних немає</td></tr>';
+      return;
+    }
+
+    stats.forEach((s) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${s.category}</td>
+        <td class="text-center">
+          <span class="badge bg-info text-dark">${s.loan_count}</span>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error("Помилка звіту категорій:", err);
   }
 }
