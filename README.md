@@ -13,7 +13,7 @@ Backend-додаток для автоматизації роботи біблі
 - **Backend:** Node.js, Express.js
 - **Database:** PostgreSQL 14
 - **ORM:** Prisma Client
-- \*\*\*\* Транзакції, CHECK-обмеження, Foreign Keys, Soft Delete
+- **Транзакції, CHECK-обмеження, Foreign Keys, Soft Delete**
 - **Containerization:** Docker & Docker Compose
 - **Testing:** Jest, Supertest
 - **Frontend:** HTML5, Bootstrap 5 (Admin Dashboard)
