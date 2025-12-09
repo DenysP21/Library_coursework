@@ -52,6 +52,7 @@ document.getElementById("addBookForm").addEventListener("submit", async (e) => {
     publisherId: document.getElementById("publisherSelect").value,
     authorId: document.getElementById("authorSelect").value,
     categoryId: document.getElementById("categorySelect").value,
+    copiesCount: document.getElementById("copies").value,
   };
 
   try {

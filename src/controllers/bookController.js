@@ -16,15 +16,22 @@ class BookController {
   });
 
   createBook = asyncHandler(async (req, res) => {
-    const { title, publicationYear, publisherId, authorId, categoryId } =
-      req.body;
+    const {
+      title,
+      publicationYear,
+      publisherId,
+      authorId,
+      categoryId,
+      copiesCount,
+    } = req.body;
 
     if (
       !title ||
       !publicationYear ||
       !publisherId ||
       !authorId ||
-      !categoryId
+      !categoryId ||
+      !copiesCount
     ) {
       return res.status(400).json({ error: "Всі поля обов'язкові!" });
     }
@@ -35,6 +42,7 @@ class BookController {
       publisherId: parseInt(publisherId),
       authorId: parseInt(authorId),
       categoryId: parseInt(categoryId),
+      copiesCount: parseInt(copiesCount),
     };
     const newBook = await bookService.createBook(cleanData);
 
