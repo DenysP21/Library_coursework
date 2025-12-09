@@ -23,14 +23,14 @@ class LoanController {
   });
 
   returnBook = asyncHandler(async (req, res) => {
-    const { bookId } = req.body;
+    const { loanId } = req.body;
 
-    if (!bookId) {
+    if (!loanId) {
       res.status(400);
-      throw new Error("Необхідно вказати bookId");
+      throw new Error("Необхідно вказати loanId");
     }
 
-    const result = await loanService.returnBook(parseInt(bookId));
+    const result = await loanService.returnBook(parseInt(loanId));
 
     res.json({
       message: "Книгу успішно повернено",

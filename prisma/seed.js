@@ -14,6 +14,7 @@ async function main() {
   await prisma.publisher.deleteMany();
   await prisma.category.deleteMany();
   await prisma.librarian.deleteMany();
+  await prisma.systemSetting.deleteMany();
 
   const catFiction = await prisma.category.create({
     data: { name: "Художня література" },
@@ -88,6 +89,7 @@ async function main() {
       pub: pubA,
       auth: authorOrwell,
       cats: [catFiction],
+      copies: 10,
     },
     {
       title: "Колгосп тварин",
@@ -95,6 +97,7 @@ async function main() {
       pub: pubA,
       auth: authorOrwell,
       cats: [catFiction],
+      copies: 15,
     },
     {
       title: "Кобзар",
@@ -102,6 +105,7 @@ async function main() {
       pub: pubA,
       auth: authorShevchenko,
       cats: [catFiction, catHistory],
+      copies: 20,
     },
     {
       title: "Sapiens",
@@ -109,6 +113,7 @@ async function main() {
       pub: pubB,
       auth: authorHarari,
       cats: [catScience, catHistory],
+      copies: 8,
     },
     {
       title: "Homo Deus",
@@ -116,6 +121,7 @@ async function main() {
       pub: pubB,
       auth: authorHarari,
       cats: [catScience],
+      copies: 5,
     },
     {
       title: "Clean Code",
@@ -123,6 +129,7 @@ async function main() {
       pub: pubC,
       auth: authorMartin,
       cats: [catIT, catScience],
+      copies: 12,
     },
     {
       title: "Clean Architecture",
@@ -130,10 +137,11 @@ async function main() {
       pub: pubC,
       auth: authorMartin,
       cats: [catIT],
+      copies: 7,
     },
   ];
 
-  const createdBooks = [];
+  const createdCopies = [];
 
   for (const b of booksData) {
     const book = await prisma.book.create({
@@ -143,9 +151,17 @@ async function main() {
         publisherId: b.pub.id,
         authors: { create: { authorId: b.auth.id } },
         categories: { create: b.cats.map((c) => ({ categoryId: c.id })) },
+        copies: {
+          create: Array.from({ length: b.copies }).map((_, i) => ({
+            inventoryNumber: `${b.title.toUpperCase().substring(0, 3)}-${
+              b.year
+            }-${1000 + i}`,
+          })),
+        },
       },
+      include: { copies: true },
     });
-    createdBooks.push(book);
+    createdCopies.push(...book.copies);
   }
 
   const member1 = await prisma.member.create({
@@ -177,7 +193,7 @@ async function main() {
     data: [
       {
         memberId: member1.id,
-        bookId: createdBooks[0].id,
+        bookCopyId: createdCopies[0].id,
         librarianId: lib1.id,
         status: "RETURNED",
         loanDate: new Date("2023-01-10"),
@@ -185,7 +201,7 @@ async function main() {
       },
       {
         memberId: member1.id,
-        bookId: createdBooks[1].id,
+        bookCopyId: createdCopies[1].id,
         librarianId: lib1.id,
         status: "RETURNED",
         loanDate: new Date("2023-02-15"),
@@ -193,7 +209,7 @@ async function main() {
       },
       {
         memberId: member1.id,
-        bookId: createdBooks[3].id,
+        bookCopyId: createdCopies[3].id,
         librarianId: lib1.id,
         status: "RETURNED",
         loanDate: new Date("2023-03-10"),
@@ -201,7 +217,7 @@ async function main() {
       },
       {
         memberId: member1.id,
-        bookId: createdBooks[5].id,
+        bookCopyId: createdCopies[5].id,
         librarianId: lib1.id,
         status: "ISSUED",
         loanDate: new Date(),
@@ -212,7 +228,7 @@ async function main() {
   await prisma.loan.create({
     data: {
       memberId: member2.id,
-      bookId: createdBooks[2].id,
+      bookCopyId: createdCopies[2].id,
       librarianId: lib1.id,
       status: "RETURNED",
       loanDate: new Date("2023-05-01"),
@@ -222,7 +238,7 @@ async function main() {
   await prisma.loan.create({
     data: {
       memberId: member2.id,
-      bookId: createdBooks[4].id,
+      bookCopyId: createdCopies[4].id,
       librarianId: lib1.id,
       status: "ISSUED",
       loanDate: new Date(),
@@ -232,7 +248,7 @@ async function main() {
   const overdueLoan = await prisma.loan.create({
     data: {
       memberId: member3.id,
-      bookId: createdBooks[0].id,
+      bookCopyId: createdCopies[0].id,
       librarianId: lib1.id,
       status: "OVERDUE",
       loanDate: new Date("2023-10-01"),
@@ -241,6 +257,13 @@ async function main() {
 
   await prisma.fine.create({
     data: { loanId: overdueLoan.id, amount: 150.0, status: "ISSUED" },
+  });
+
+  await prisma.systemSetting.create({
+    data: {
+      loanPeriodDays: 14,
+      finePerDay: 5.0,
+    },
   });
 
   console.log("✅ База даних успішно наповнена багатими даними!");

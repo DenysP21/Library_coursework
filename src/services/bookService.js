@@ -39,7 +39,20 @@ class BookService {
   }
 
   async createBook(data) {
-    const { title, publicationYear, publisherId, authorId, categoryId } = data;
+    const {
+      title,
+      publicationYear,
+      publisherId,
+      authorId,
+      categoryId,
+      copiesCount,
+    } = data;
+
+    const copiesData = Array.from({ length: copiesCount }).map((_, index) => ({
+      inventoryNumber: `${title
+        .substring(0, 3)
+        .toUpperCase()}-${publicationYear}-${Date.now()}-${index + 1}`,
+    }));
 
     return await prisma.book.create({
       data: {
@@ -52,7 +65,11 @@ class BookService {
         categories: {
           create: { categoryId },
         },
+        copies: {
+          create: copiesData,
+        },
       },
+      include: { copies: true },
     });
   }
   async updateBook(id, data) {

@@ -52,6 +52,7 @@ document.getElementById("addBookForm").addEventListener("submit", async (e) => {
     publisherId: document.getElementById("publisherSelect").value,
     authorId: document.getElementById("authorSelect").value,
     categoryId: document.getElementById("categorySelect").value,
+    copiesCount: document.getElementById("copies").value,
   };
 
   try {
@@ -168,10 +169,15 @@ document
   });
 async function loadLoansList() {
   try {
-    const res = await fetch(`${API_URL}/loans`);
+    const settingRES = await fetch(`${API_URL}/settings`);
+    const settings = await settingRES.json();
+    const loanDays = settings.loanPeriodDays || 14;
+
+    const res = await fetch(`${API_URL}/loans?limit=50`);
     const loans = await res.json();
 
     const tbody = document.getElementById("loansTableBody");
+    if (!tbody) return;
     tbody.innerHTML = "";
 
     loans.forEach((loan) => {
@@ -182,7 +188,7 @@ async function loadLoansList() {
         dateReturned = new Date(loan.returnDate).toLocaleDateString("uk-UA");
       } else {
         const deadline = new Date(loan.loanDate);
-        deadline.setDate(deadline.getDate() + 14);
+        deadline.setDate(deadline.getDate() + loanDays);
         dateReturned = `<span class="text-muted">до ${deadline.toLocaleDateString(
           "uk-UA"
         )}</span>`;
@@ -195,8 +201,8 @@ async function loadLoansList() {
         actionBtn = `
           <button 
             class="btn btn-sm btn-outline-success" 
-            onclick="returnBook(${loan.book.id})"
-            title="Повернути книгу"
+            onclick="returnBook(${loan.id})"
+            title="Повернути цей примірник"
           >
             📥 Повернути
           </button>
@@ -206,7 +212,14 @@ async function loadLoansList() {
       const tr = document.createElement("tr");
       tr.innerHTML = `
           <td>${loan.id}</td>
-          <td class="fw-bold text-primary">${loan.book.title}</td>
+          <td>
+                <div class="fw-bold text-primary">${
+                  loan.book ? loan.book.title : "Назва не знайдена"
+                }</div>
+                <small class="text-muted" style="font-size: 0.85em;">
+                  Прим. №: ${loan.inventoryNumber || "Н/Д"}
+                </small>
+            </td>
           <td>${loan.member.surname} ${loan.member.name}</td>
           <td>${dateIssued}</td>
           <td>${dateReturned}</td>
@@ -304,14 +317,14 @@ document
     }
   });
 
-async function returnBook(bookId) {
-  if (!confirm("Підтвердити повернення книги?")) return;
+async function returnBook(loanId) {
+  if (!confirm("Підтвердити повернення цього примірника?")) return;
 
   try {
     const res = await fetch(`${API_URL}/loans/return`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookId: parseInt(bookId) }),
+      body: JSON.stringify({ loanId: parseInt(loanId) }),
     });
 
     const data = await res.json();
@@ -402,3 +415,48 @@ async function loadCategoryStats() {
     console.error("Помилка звіту категорій:", err);
   }
 }
+
+const settingsModalEl = document.getElementById("settingsModal");
+
+settingsModalEl.addEventListener("show.bs.modal", async () => {
+  try {
+    const res = await fetch(`${API_URL}/settings`);
+    const data = await res.json();
+
+    document.getElementById("settingLoanDays").value = data.loanPeriodDays;
+    document.getElementById("settingFine").value = data.finePerDay;
+  } catch (err) {
+    console.error("Помилка завантаження налаштувань:", err);
+  }
+});
+
+document
+  .getElementById("settingsForm")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      loanPeriodDays: document.getElementById("settingLoanDays").value,
+      finePerDay: document.getElementById("settingFine").value,
+    };
+
+    try {
+      const res = await fetch(`${API_URL}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        alert(
+          "✅ Налаштування оновлено! Вони діятимуть для всіх нових повернень."
+        );
+        bootstrap.Modal.getInstance(settingsModalEl).hide();
+      } else {
+        alert("Помилка збереження");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Помилка з'єднання");
+    }
+  });

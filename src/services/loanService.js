@@ -4,73 +4,71 @@ const prisma = new PrismaClient();
 class LoanService {
   async issueBook(bookId, memberId, librarianId) {
     return await prisma.$transaction(async (tx) => {
-      const book = await tx.book.findUnique({ where: { id: bookId } });
-      if (!book) {
-        throw new Error(`Книгу з ID ${bookId} не знайдено.`);
-      }
+      const member = await tx.member.findUnique({ where: { id: memberId } });
+      if (!member) throw new Error(`Читача з ID ${memberId} не знайдено.`);
+      if (member.deletedAt) throw new Error(`Читач видалений/заблокований.`);
 
-      const activeLoan = await tx.loan.findFirst({
+      const availableCopy = await tx.bookCopy.findFirst({
         where: {
           bookId: bookId,
-          status: "ISSUED",
+          loans: {
+            none: {
+              status: { in: ["ISSUED", "OVERDUE"] },
+            },
+          },
         },
+        include: { book: true },
       });
 
-      if (activeLoan) {
-        throw new Error(`Книга "${book.title}" вже видана.`);
-      }
-
-      const member = await tx.member.findUnique({
-        where: { id: memberId },
-      });
-
-      if (!member) {
-        throw new Error(`Читача з ID ${memberId} не знайдено.`);
-      }
-
-      if (member.deletedAt) {
-        throw new Error(`Читач видалений/заблокований.`);
+      if (!availableCopy) {
+        throw new Error(`На жаль, всі примірники цієї книги зараз видані.`);
       }
 
       const newLoan = await tx.loan.create({
         data: {
-          bookId,
+          bookCopyId: availableCopy.id,
           memberId,
           librarianId,
           loanDate: new Date(),
           status: "ISSUED",
         },
         include: {
-          book: true,
+          bookCopy: { include: { book: true } },
           member: true,
           librarian: true,
         },
       });
 
       console.log(
-        `✅ Книга "${book.title}" успішно видана читачу ${member.surname}`
+        `✅ Примірник "${availableCopy.inventoryNumber}" (Книга: ${availableCopy.book.title}) видано.`
       );
-      return newLoan;
+
+      return {
+        ...newLoan,
+        book: newLoan.bookCopy.book,
+      };
     });
   }
 
-  async returnBook(bookId) {
+  async returnBook(loanId) {
+    const activeLoan = await prisma.loan.findUnique({
+      where: { id: loanId },
+      include: { bookCopy: true },
+    });
+
+    if (!activeLoan) {
+      throw new Error(`Позика з ID ${loanId} не знайдена.`);
+    }
+
+    if (activeLoan.status === "RETURNED") {
+      throw new Error(`Ця книга вже повернута.`);
+    }
+
     return await prisma.$transaction(async (tx) => {
-      const activeLoan = await tx.loan.findFirst({
-        where: {
-          bookId: bookId,
-          status: { in: ["ISSUED", "OVERDUE"] },
-          returnDate: null,
-        },
-        include: { book: true },
-      });
+      const settings = await tx.systemSetting.findFirst();
 
-      if (!activeLoan) {
-        throw new Error(`Ця книга (ID: ${bookId}) не рахується виданою.`);
-      }
-
-      const LOAN_PERIOD_DAYS = 14;
-      const FINE_PER_DAY = 5;
+      const LOAN_PERIOD_DAYS = settings ? settings.loanPeriodDays : 14;
+      const FINE_PER_DAY = settings ? settings.finePerDay : 5.0;
 
       const today = new Date();
       const loanDate = new Date(activeLoan.loanDate);
@@ -85,22 +83,16 @@ class LoanService {
         const fineAmount = diffDays * FINE_PER_DAY;
 
         fineCreated = await tx.fine.upsert({
-          where: {
-            loanId: activeLoan.id,
-          },
-          update: {
-            amount: fineAmount,
-            status: "ISSUED",
-          },
+          where: { loanId: activeLoan.id },
+          update: { amount: fineAmount, status: "ISSUED" },
           create: {
             loanId: activeLoan.id,
             amount: fineAmount,
             status: "ISSUED",
           },
         });
-        console.log(
-          `⚠️ Нараховано штраф: ${fineAmount} грн за ${diffDays} днів прострочки.`
-        );
+
+        console.log(`⚠️ Штраф: ${fineAmount} грн`);
       }
 
       const updatedLoan = await tx.loan.update({
@@ -116,13 +108,24 @@ class LoanService {
   }
 
   async getAllLoans(limit = 50) {
-    return await prisma.loan.findMany({
+    const loans = await prisma.loan.findMany({
       take: limit,
       orderBy: { loanDate: "desc" },
       include: {
-        book: true,
+        bookCopy: { include: { book: true } },
         member: true,
       },
+    });
+
+    return loans.map((l) => {
+      const copy = l.bookCopy || {};
+      const book = copy.book || { title: "Назва не знайдена" };
+
+      return {
+        ...l,
+        book: book,
+        inventoryNumber: copy.inventoryNumber || "Н/Д",
+      };
     });
   }
 }

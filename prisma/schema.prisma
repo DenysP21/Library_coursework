@@ -70,12 +70,24 @@ model Book {
   
   authors         AuthorBook[]
   categories      BookCategory[]
-  loans           Loan[]
+  copies          BookCopy[]
 
   createdAt       DateTime       @default(now()) @map("created_at")
 
   @@index([title])
   @@map("Book")
+}
+
+model BookCopy {
+  id        Int     @id @default(autoincrement()) @map("copy_id")
+  bookId    Int     @map("book_id")
+  book      Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  
+  inventoryNumber String @unique @default(uuid()) @map("inventory_number")
+
+  loans     Loan[] 
+
+  @@map("BookCopy")
 }
 
 model AuthorBook {
@@ -129,14 +141,14 @@ model Member {
 model Loan {
   id          Int        @id @default(autoincrement()) @map("loan_id")
   memberId    Int        @map("member_id")
-  bookId      Int        @map("book_id")
+  bookCopyId  Int        @map("copy_id")
   librarianId Int        @map("librarian_id")
   loanDate    DateTime   @default(now()) @map("loan_date") @db.Date
   returnDate  DateTime?  @map("return_date") @db.Date
   status      LoanStatus @default(ISSUED)
   
   member      Member     @relation(fields: [memberId], references: [id])
-  book        Book       @relation(fields: [bookId], references: [id])
+  bookCopy    BookCopy   @relation(fields: [bookCopyId], references: [id])
   librarian   Librarian  @relation(fields: [librarianId], references: [id])
   fine        Fine?
 
@@ -153,4 +165,12 @@ model Fine {
   loan   Loan       @relation(fields: [loanId], references: [id])
 
   @@map("Fine")
+}
+
+model SystemSetting {
+  id             Int     @id @default(autoincrement())
+  loanPeriodDays Int     @default(14) @map("loan_period_days")
+  finePerDay     Decimal @default(5.00) @db.Decimal(5, 2) @map("fine_per_day")
+
+  @@map("SystemSetting")
 }

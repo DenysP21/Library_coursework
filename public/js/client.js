@@ -113,8 +113,12 @@ async function takeBook(bookId) {
     const data = await res.json();
 
     if (res.ok) {
+      const settingsRes = await fetch(`${API_URL}/settings`);
+      const settings = await settingsRes.json();
+      const loanDays = settings.loanPeriodDays || 14;
+
       const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 14);
+      dueDate.setDate(dueDate.getDate() + loanDays);
 
       alert(
         `✅ Успіх! Ви взяли книгу "${
