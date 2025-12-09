@@ -50,23 +50,21 @@ class LoanService {
     });
   }
 
-  async returnBook(bookId) {
+  async returnBook(loanId) {
+    const activeLoan = await prisma.loan.findUnique({
+      where: { id: loanId },
+      include: { bookCopy: true },
+    });
+
+    if (!activeLoan) {
+      throw new Error(`Позика з ID ${loanId} не знайдена.`);
+    }
+
+    if (activeLoan.status === "RETURNED") {
+      throw new Error(`Ця книга вже повернута.`);
+    }
+
     return await prisma.$transaction(async (tx) => {
-      const activeLoan = await tx.loan.findFirst({
-        where: {
-          bookCopy: { bookId: bookId },
-          status: { in: ["ISSUED", "OVERDUE"] },
-          returnDate: null,
-        },
-        include: {
-          bookCopy: { include: { book: true } },
-        },
-      });
-
-      if (!activeLoan) {
-        throw new Error(`Немає активних видач для цієї книги (ID: ${bookId}).`);
-      }
-
       const LOAN_PERIOD_DAYS = 14;
       const FINE_PER_DAY = 5;
 
@@ -117,10 +115,16 @@ class LoanService {
       },
     });
 
-    return loans.map((l) => ({
-      ...l,
-      book: l.bookCopy.book,
-    }));
+    return loans.map((l) => {
+      const copy = l.bookCopy || {};
+      const book = copy.book || { title: "Назва не знайдена" };
+
+      return {
+        ...l,
+        book: book,
+        inventoryNumber: copy.inventoryNumber || "Н/Д",
+      };
+    });
   }
 }
 

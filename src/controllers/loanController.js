@@ -3,15 +3,15 @@ const asyncHandler = require("../utils/asyncHandler");
 
 class LoanController {
   createLoan = asyncHandler(async (req, res) => {
-    const { bookId, memberId, librarianId } = req.body;
+    const { loanId, memberId, librarianId } = req.body;
 
-    if (!bookId || !memberId || !librarianId) {
+    if (!loanId || !memberId || !librarianId) {
       res.status(400);
-      throw new Error("Необхідно вказати bookId, memberId та librarianId");
+      throw new Error("Необхідно вказати loanId, memberId та librarianId");
     }
 
     const loan = await loanService.issueBook(
-      parseInt(bookId),
+      parseInt(loanId),
       parseInt(memberId),
       parseInt(librarianId)
     );
@@ -23,14 +23,14 @@ class LoanController {
   });
 
   returnBook = asyncHandler(async (req, res) => {
-    const { bookId } = req.body;
+    const { loanId } = req.body;
 
-    if (!bookId) {
+    if (!loanId) {
       res.status(400);
-      throw new Error("Необхідно вказати bookId");
+      throw new Error("Необхідно вказати loanId");
     }
 
-    const result = await loanService.returnBook(parseInt(bookId));
+    const result = await loanService.returnBook(parseInt(loanId));
 
     res.json({
       message: "Книгу успішно повернено",

@@ -168,10 +168,11 @@ document
   });
 async function loadLoansList() {
   try {
-    const res = await fetch(`${API_URL}/loans`);
+    const res = await fetch(`${API_URL}/loans?limit=50`);
     const loans = await res.json();
 
     const tbody = document.getElementById("loansTableBody");
+    if (!tbody) return;
     tbody.innerHTML = "";
 
     loans.forEach((loan) => {
@@ -195,8 +196,8 @@ async function loadLoansList() {
         actionBtn = `
           <button 
             class="btn btn-sm btn-outline-success" 
-            onclick="returnBook(${loan.book.id})"
-            title="Повернути книгу"
+            onclick="returnBook(${loan.id})"
+            title="Повернути цей примірник"
           >
             📥 Повернути
           </button>
@@ -206,7 +207,14 @@ async function loadLoansList() {
       const tr = document.createElement("tr");
       tr.innerHTML = `
           <td>${loan.id}</td>
-          <td class="fw-bold text-primary">${loan.book.title}</td>
+          <td>
+                <div class="fw-bold text-primary">${
+                  loan.book ? loan.book.title : "Назва не знайдена"
+                }</div>
+                <small class="text-muted" style="font-size: 0.85em;">
+                  Прим. №: ${loan.inventoryNumber || "Н/Д"}
+                </small>
+            </td>
           <td>${loan.member.surname} ${loan.member.name}</td>
           <td>${dateIssued}</td>
           <td>${dateReturned}</td>
@@ -304,14 +312,14 @@ document
     }
   });
 
-async function returnBook(bookId) {
-  if (!confirm("Підтвердити повернення книги?")) return;
+async function returnBook(loanId) {
+  if (!confirm("Підтвердити повернення цього примірника?")) return;
 
   try {
     const res = await fetch(`${API_URL}/loans/return`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookId: parseInt(bookId) }),
+      body: JSON.stringify({ loanId: parseInt(loanId) }),
     });
 
     const data = await res.json();
