@@ -166,3 +166,11 @@ model Fine {
 
   @@map("Fine")
 }
+
+model SystemSetting {
+  id             Int     @id @default(autoincrement())
+  loanPeriodDays Int     @default(14) @map("loan_period_days")
+  finePerDay     Decimal @default(5.00) @db.Decimal(5, 2) @map("fine_per_day")
+
+  @@map("SystemSetting")
+}

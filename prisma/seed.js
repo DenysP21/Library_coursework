@@ -14,6 +14,7 @@ async function main() {
   await prisma.publisher.deleteMany();
   await prisma.category.deleteMany();
   await prisma.librarian.deleteMany();
+  await prisma.systemSetting.deleteMany();
 
   const catFiction = await prisma.category.create({
     data: { name: "Художня література" },
@@ -256,6 +257,13 @@ async function main() {
 
   await prisma.fine.create({
     data: { loanId: overdueLoan.id, amount: 150.0, status: "ISSUED" },
+  });
+
+  await prisma.systemSetting.create({
+    data: {
+      loanPeriodDays: 14,
+      finePerDay: 5.0,
+    },
   });
 
   console.log("✅ База даних успішно наповнена багатими даними!");

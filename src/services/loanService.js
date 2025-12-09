@@ -65,8 +65,10 @@ class LoanService {
     }
 
     return await prisma.$transaction(async (tx) => {
-      const LOAN_PERIOD_DAYS = 14;
-      const FINE_PER_DAY = 5;
+      const settings = await tx.systemSetting.findFirst();
+
+      const LOAN_PERIOD_DAYS = settings ? settings.loanPeriodDays : 14;
+      const FINE_PER_DAY = settings ? settings.finePerDay : 5.0;
 
       const today = new Date();
       const loanDate = new Date(activeLoan.loanDate);

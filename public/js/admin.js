@@ -169,6 +169,10 @@ document
   });
 async function loadLoansList() {
   try {
+    const settingRES = await fetch(`${API_URL}/settings`);
+    const settings = await settingRES.json();
+    const loanDays = settings.loanPeriodDays || 14;
+
     const res = await fetch(`${API_URL}/loans?limit=50`);
     const loans = await res.json();
 
@@ -184,7 +188,7 @@ async function loadLoansList() {
         dateReturned = new Date(loan.returnDate).toLocaleDateString("uk-UA");
       } else {
         const deadline = new Date(loan.loanDate);
-        deadline.setDate(deadline.getDate() + 14);
+        deadline.setDate(deadline.getDate() + loanDays);
         dateReturned = `<span class="text-muted">до ${deadline.toLocaleDateString(
           "uk-UA"
         )}</span>`;
@@ -411,3 +415,48 @@ async function loadCategoryStats() {
     console.error("Помилка звіту категорій:", err);
   }
 }
+
+const settingsModalEl = document.getElementById("settingsModal");
+
+settingsModalEl.addEventListener("show.bs.modal", async () => {
+  try {
+    const res = await fetch(`${API_URL}/settings`);
+    const data = await res.json();
+
+    document.getElementById("settingLoanDays").value = data.loanPeriodDays;
+    document.getElementById("settingFine").value = data.finePerDay;
+  } catch (err) {
+    console.error("Помилка завантаження налаштувань:", err);
+  }
+});
+
+document
+  .getElementById("settingsForm")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      loanPeriodDays: document.getElementById("settingLoanDays").value,
+      finePerDay: document.getElementById("settingFine").value,
+    };
+
+    try {
+      const res = await fetch(`${API_URL}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        alert(
+          "✅ Налаштування оновлено! Вони діятимуть для всіх нових повернень."
+        );
+        bootstrap.Modal.getInstance(settingsModalEl).hide();
+      } else {
+        alert("Помилка збереження");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Помилка з'єднання");
+    }
+  });
