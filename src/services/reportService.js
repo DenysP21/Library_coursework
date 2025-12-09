@@ -19,7 +19,6 @@ class ReportService {
       ORDER BY total_loans DESC
       LIMIT 5;
     `;
-
     return result.map((row) => ({
       ...row,
       total_loans: Number(row.total_loans),
@@ -35,7 +34,8 @@ class ReportService {
       FROM "Category" c
       JOIN "BookCategory" bc ON c.category_id = bc.category_id
       JOIN "Book" b ON bc.book_id = b.book_id
-      JOIN "Loan" l ON b.book_id = l.book_id
+      JOIN "BookCopy" copy ON b.book_id = copy.book_id
+      JOIN "Loan" l ON copy.copy_id = l.copy_id
       GROUP BY c.category_id, c.category_name
       ORDER BY loan_count DESC;
     `;
