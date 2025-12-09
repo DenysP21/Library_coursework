@@ -4,53 +4,49 @@ const prisma = new PrismaClient();
 class LoanService {
   async issueBook(bookId, memberId, librarianId) {
     return await prisma.$transaction(async (tx) => {
-      const book = await tx.book.findUnique({ where: { id: bookId } });
-      if (!book) {
-        throw new Error(`Книгу з ID ${bookId} не знайдено.`);
-      }
+      const member = await tx.member.findUnique({ where: { id: memberId } });
+      if (!member) throw new Error(`Читача з ID ${memberId} не знайдено.`);
+      if (member.deletedAt) throw new Error(`Читач видалений/заблокований.`);
 
-      const activeLoan = await tx.loan.findFirst({
+      const availableCopy = await tx.bookCopy.findFirst({
         where: {
           bookId: bookId,
-          status: "ISSUED",
+          loans: {
+            none: {
+              status: { in: ["ISSUED", "OVERDUE"] },
+            },
+          },
         },
+        include: { book: true },
       });
 
-      if (activeLoan) {
-        throw new Error(`Книга "${book.title}" вже видана.`);
-      }
-
-      const member = await tx.member.findUnique({
-        where: { id: memberId },
-      });
-
-      if (!member) {
-        throw new Error(`Читача з ID ${memberId} не знайдено.`);
-      }
-
-      if (member.deletedAt) {
-        throw new Error(`Читач видалений/заблокований.`);
+      if (!availableCopy) {
+        throw new Error(`На жаль, всі примірники цієї книги зараз видані.`);
       }
 
       const newLoan = await tx.loan.create({
         data: {
-          bookId,
+          bookCopyId: availableCopy.id,
           memberId,
           librarianId,
           loanDate: new Date(),
           status: "ISSUED",
         },
         include: {
-          book: true,
+          bookCopy: { include: { book: true } },
           member: true,
           librarian: true,
         },
       });
 
       console.log(
-        `✅ Книга "${book.title}" успішно видана читачу ${member.surname}`
+        `✅ Примірник "${availableCopy.inventoryNumber}" (Книга: ${availableCopy.book.title}) видано.`
       );
-      return newLoan;
+
+      return {
+        ...newLoan,
+        book: newLoan.bookCopy.book,
+      };
     });
   }
 
@@ -58,15 +54,17 @@ class LoanService {
     return await prisma.$transaction(async (tx) => {
       const activeLoan = await tx.loan.findFirst({
         where: {
-          bookId: bookId,
+          bookCopy: { bookId: bookId },
           status: { in: ["ISSUED", "OVERDUE"] },
           returnDate: null,
         },
-        include: { book: true },
+        include: {
+          bookCopy: { include: { book: true } },
+        },
       });
 
       if (!activeLoan) {
-        throw new Error(`Ця книга (ID: ${bookId}) не рахується виданою.`);
+        throw new Error(`Немає активних видач для цієї книги (ID: ${bookId}).`);
       }
 
       const LOAN_PERIOD_DAYS = 14;
@@ -85,22 +83,16 @@ class LoanService {
         const fineAmount = diffDays * FINE_PER_DAY;
 
         fineCreated = await tx.fine.upsert({
-          where: {
-            loanId: activeLoan.id,
-          },
-          update: {
-            amount: fineAmount,
-            status: "ISSUED",
-          },
+          where: { loanId: activeLoan.id },
+          update: { amount: fineAmount, status: "ISSUED" },
           create: {
             loanId: activeLoan.id,
             amount: fineAmount,
             status: "ISSUED",
           },
         });
-        console.log(
-          `⚠️ Нараховано штраф: ${fineAmount} грн за ${diffDays} днів прострочки.`
-        );
+
+        console.log(`⚠️ Штраф: ${fineAmount} грн`);
       }
 
       const updatedLoan = await tx.loan.update({
@@ -116,14 +108,19 @@ class LoanService {
   }
 
   async getAllLoans(limit = 50) {
-    return await prisma.loan.findMany({
+    const loans = await prisma.loan.findMany({
       take: limit,
       orderBy: { loanDate: "desc" },
       include: {
-        book: true,
+        bookCopy: { include: { book: true } },
         member: true,
       },
     });
+
+    return loans.map((l) => ({
+      ...l,
+      book: l.bookCopy.book,
+    }));
   }
 }
 
